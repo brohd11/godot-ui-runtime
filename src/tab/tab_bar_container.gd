@@ -1,6 +1,8 @@
 #! namespace UIRuntime.Tabs class TabBarContainer
 extends VBoxContainer
 
+const UEngine = preload("uid://d3ly5y4q2tx57") #! resolve UtilR.UEngine
+
 const _TAB_CONTROL = &"_tab_control"
 
 var _tab_panel:PanelContainer
@@ -10,7 +12,6 @@ var _tab_vbox:VBoxContainer
 
 var _setting_current_tab:bool=false
 
-var _current_tab_idx:int = 0
 
 var _tab_meta:= {}
 
@@ -24,8 +25,11 @@ func _ready() -> void:
 	
 	_tab_panel = PanelContainer.new()
 	_tab_bar_hbox.add_child(_tab_panel)
-	var ed_theme = EditorInterface.get_editor_theme()
-	_tab_panel.add_theme_stylebox_override(&"panel", ed_theme.get_stylebox(&"tabbar_background", &"TabContainer"))
+	# Outside the editor (a running game) the panel keeps its theme's look.
+	var editor_interface = UEngine.get_editor_interface()
+	if is_instance_valid(editor_interface):
+		var ed_theme = editor_interface.get_editor_theme()
+		_tab_panel.add_theme_stylebox_override(&"panel", ed_theme.get_stylebox(&"tabbar_background", &"TabContainer"))
 	
 	_tab_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tab_bar = TabBar.new()
@@ -104,8 +108,10 @@ func _on_tab_changed(tab:int):
 func _on_tab_visibility_changed(control:Control):
 	if _setting_current_tab:
 		return
+	# visibility_changed also fires when an ancestor hides or shows; only a hidden tab that
+	# showed itself switches the tab.
 	var new_i = control.get_index()
-	if control.get_index() == _current_tab_idx:
+	if not control.visible or new_i == _tab_bar.current_tab:
 		return
 	_tab_bar.current_tab = new_i
 
